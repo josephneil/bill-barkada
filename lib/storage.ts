@@ -97,7 +97,7 @@ function normalizeSavedBill(value: unknown): SavedBill | null {
   };
 }
 
-function normalizeBillState(value: unknown): BillState {
+export function normalizeBillState(value: unknown): BillState {
   const source = isRecord(value) ? value : {};
   const people = Array.isArray(source.people) ? source.people : [];
   const personIds = new Set(

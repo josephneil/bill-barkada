@@ -3,6 +3,5 @@ export { BillDetailsSection } from "./bill-details-section";
 export { HistorySection } from "./history-section";
 export { ItemsSection } from "./items-section";
 export { PeopleSection } from "./people-section";
-export { SettlementSection } from "./settlement-section";
+export { ReceiptSummaryCard } from "./receipt-summary-card";
 export { StatTile } from "./stat-tile";
-export { SummarySection } from "./summary-section";

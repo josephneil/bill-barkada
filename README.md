@@ -2,8 +2,8 @@
 
 Bill Barkada is a small Next.js app for splitting group bills. Add people,
 enter receipt items, choose who shared each item, apply service charge, tip, or
-discount adjustments, track who already paid, and copy a clean payment summary
-for chat.
+discount adjustments, track who already paid, and share a clean receipt-style
+summary.
 
 ## Features
 
@@ -15,6 +15,10 @@ for chat.
 - Choose fixed tip amount or tip percentage.
 - Mark each person as paid or unpaid.
 - Show who owes the payer when a paid-by person is selected.
+- Review a receipt-style summary with per-person breakdowns.
+- Export the receipt summary as a PNG image.
+- Create compressed share links for frontend-only bill sharing.
+- Check non-blocking validation warnings before sharing.
 - Save the current bill locally in the browser.
 - Save, load, delete, and clear local bill history.
 - Copy a shareable payment summary.
