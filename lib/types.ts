@@ -34,10 +34,19 @@ export type SavedBill = BillState & {
   updatedAt: string;
 };
 
+export type PersonItemShare = {
+  itemId: string;
+  itemName: string;
+  itemPrice: number;
+  sharedWithCount: number;
+  share: number;
+};
+
 export type PersonTotal = {
   personId: string;
   name: string;
   subtotal: number;
+  itemShares: PersonItemShare[];
   serviceCharge: number;
   tipShare: number;
   discountShare: number;
@@ -53,6 +62,18 @@ export type SettlementLine = {
   amount: number;
 };
 
+export type BillWarningType =
+  | "empty-title"
+  | "unassigned-item"
+  | "person-without-items"
+  | "discount-too-large"
+  | "missing-payer";
+
+export type BillWarning = {
+  type: BillWarningType;
+  message: string;
+};
+
 export type BillCalculation = {
   subtotal: number;
   serviceCharge: number;
@@ -61,4 +82,5 @@ export type BillCalculation = {
   grandTotal: number;
   personTotals: PersonTotal[];
   settlementLines: SettlementLine[];
+  warnings: BillWarning[];
 };

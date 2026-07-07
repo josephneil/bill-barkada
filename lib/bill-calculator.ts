@@ -1,6 +1,8 @@
 import type {
   BillCalculation,
+  BillWarning,
   BillState,
+  PersonItemShare,
   PersonTotal,
   SettlementLine,
 } from "./types";
@@ -12,9 +14,11 @@ export function calculateBill(state: BillState): BillCalculation {
   );
 
   const baseTotals = new Map<string, number>();
+  const itemShares = new Map<string, PersonItemShare[]>();
 
   for (const person of state.people) {
     baseTotals.set(person.id, 0);
+    itemShares.set(person.id, []);
   }
 
   for (const item of state.items) {
@@ -24,6 +28,13 @@ export function calculateBill(state: BillState): BillCalculation {
 
     for (const personId of item.sharedBy) {
       baseTotals.set(personId, (baseTotals.get(personId) ?? 0) + share);
+      itemShares.get(personId)?.push({
+        itemId: item.id,
+        itemName: item.name,
+        itemPrice: roundMoney(item.price),
+        sharedWithCount: item.sharedBy.length,
+        share: roundMoney(share),
+      });
     }
   }
 
@@ -53,6 +64,7 @@ export function calculateBill(state: BillState): BillCalculation {
       personId: person.id,
       name: person.name,
       subtotal: roundMoney(personSubtotal),
+      itemShares: itemShares.get(person.id) ?? [],
       serviceCharge: roundMoney(personServiceCharge),
       tipShare: roundMoney(personTipShare),
       discountShare: roundMoney(personDiscountShare),
@@ -69,6 +81,11 @@ export function calculateBill(state: BillState): BillCalculation {
     grandTotal: roundMoney(grandTotal),
     personTotals,
     settlementLines: createSettlementLines(state, personTotals),
+    warnings: createBillWarnings(state, personTotals, {
+      subtotal,
+      serviceCharge,
+      tip,
+    }),
   };
 }
 
@@ -140,6 +157,61 @@ function createSettlementLines(
       toName: payer.name,
       amount: roundMoney(person.total),
     }));
+}
+
+function createBillWarnings(
+  state: BillState,
+  personTotals: PersonTotal[],
+  totals: {
+    subtotal: number;
+    serviceCharge: number;
+    tip: number;
+  },
+): BillWarning[] {
+  const warnings: BillWarning[] = [];
+  const adjustmentTotal = totals.subtotal + totals.serviceCharge + totals.tip;
+
+  if (!state.title.trim()) {
+    warnings.push({
+      type: "empty-title",
+      message: "Add a bill title so the summary is easy to recognize.",
+    });
+  }
+
+  for (const item of state.items) {
+    if (item.sharedBy.length === 0) {
+      warnings.push({
+        type: "unassigned-item",
+        message: `${item.name || "An item"} has no assigned people.`,
+      });
+    }
+  }
+
+  for (const person of personTotals) {
+    if (person.itemShares.length === 0) {
+      warnings.push({
+        type: "person-without-items",
+        message: `${person.name} has no assigned items.`,
+      });
+    }
+  }
+
+  if (safeNumber(state.discountAmount) > adjustmentTotal) {
+    warnings.push({
+      type: "discount-too-large",
+      message:
+        "Discount is larger than subtotal, service charge, and tip, so the total is capped at zero.",
+    });
+  }
+
+  if (!state.paidById && personTotals.some((person) => person.total > 0)) {
+    warnings.push({
+      type: "missing-payer",
+      message: "Select who paid to generate settlement lines.",
+    });
+  }
+
+  return warnings;
 }
 
 function safeNumber(value: number): number {

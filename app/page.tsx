@@ -7,11 +7,15 @@ import {
   HistorySection,
   ItemsSection,
   PeopleSection,
-  SettlementSection,
+  ReceiptSummaryCard,
   StatTile,
-  SummarySection,
 } from "@/components/bill";
 import { calculateBill, createShareText } from "@/lib/bill-calculator";
+import {
+  createShareUrl,
+  loadSharedBillFromUrl,
+  SHARE_PARAM,
+} from "@/lib/share-link";
 import {
   clearBillHistory,
   clearBillState,
@@ -52,25 +56,40 @@ export default function Home() {
   const [itemPrice, setItemPrice] = useState("");
   const [copied, setCopied] = useState(false);
   const [historyMessage, setHistoryMessage] = useState("");
+  const [shareLinkMessage, setShareLinkMessage] = useState("");
+  const [isSharedBill, setIsSharedBill] = useState(false);
 
   const calculation = useMemo(() => calculateBill(bill), [bill]);
-  const payer = bill.people.find((person) => person.id === bill.paidById);
 
   useEffect(() => {
     queueMicrotask(() => {
+      const hasSharedBillParam = new URL(window.location.href).searchParams.has(
+        SHARE_PARAM,
+      );
+      const sharedBill = loadSharedBillFromUrl(window.location.href);
       const saved = loadBillState();
 
-      if (saved) setBill(saved);
+      if (sharedBill) {
+        setBill(sharedBill);
+        setIsSharedBill(true);
+        setShareLinkMessage("Loaded bill from shared link.");
+      } else if (hasSharedBillParam) {
+        setShareLinkMessage("Shared link could not be loaded.");
+        if (saved) setBill(saved);
+      } else if (saved) {
+        setBill(saved);
+      }
+
       setHistory(loadBillHistory());
       setIsStorageReady(true);
     });
   }, []);
 
   useEffect(() => {
-    if (!isStorageReady) return;
+    if (!isStorageReady || isSharedBill) return;
 
     saveBillState(bill);
-  }, [bill, isStorageReady]);
+  }, [bill, isSharedBill, isStorageReady]);
 
   function updateBillDetails(update: Partial<BillState>) {
     setBill((current) => ({ ...current, ...update }));
@@ -198,6 +217,8 @@ export default function Home() {
 
   function resetBill() {
     setBill(emptyBill);
+    setIsSharedBill(false);
+    setShareLinkMessage("");
     clearBillState();
   }
 
@@ -205,6 +226,7 @@ export default function Home() {
     const saved = saveBillToHistory(bill);
 
     setHistory(loadBillHistory());
+    setIsSharedBill(false);
     setHistoryMessage(`Saved ${saved.title || "Untitled bill"}.`);
   }
 
@@ -222,6 +244,8 @@ export default function Home() {
       discountAmount: savedBill.discountAmount,
       paymentStatuses: savedBill.paymentStatuses,
     });
+    setIsSharedBill(false);
+    setShareLinkMessage("");
     setHistoryMessage(`Loaded ${savedBill.title || "Untitled bill"}.`);
   }
 
@@ -237,21 +261,31 @@ export default function Home() {
     setHistoryMessage("Bill history cleared.");
   }
 
+  async function createShareLink() {
+    try {
+      const shareUrl = createShareUrl(bill, window.location.href);
+
+      await navigator.clipboard.writeText(shareUrl);
+      setShareLinkMessage("Share link copied.");
+    } catch {
+      setShareLinkMessage("Could not create a share link. Please try again.");
+    }
+  }
+
   return (
     <main className="barkada-shell min-h-screen text-foreground">
       <section className="mx-auto max-w-6xl px-5 py-8 md:py-12">
         <div className="mb-8 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase text-primary">
-              Bill Barkada V2
+              Bill Barkada V3
             </p>
             <h1 className="mt-3 max-w-3xl text-3xl font-semibold leading-tight md:text-4xl">
-              Split the receipt, track who paid, and send one clean group chat
-              summary.
+              Split, verify, and share group bills without losing the table math.
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
-              Built for real table math: tips, discounts, payment status,
-              settlements, and local bill history.
+              Built for real group meals: receipt-style summaries, image export,
+              share links, payment status, settlements, and local history.
             </p>
           </div>
 
@@ -298,22 +332,16 @@ export default function Home() {
           </div>
 
           <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
-            <SummarySection
-              grandTotal={calculation.grandTotal}
-              personTotals={calculation.personTotals}
-              subtotal={calculation.subtotal}
-              serviceCharge={calculation.serviceCharge}
-              tip={calculation.tip}
-              discount={calculation.discount}
+            <ReceiptSummaryCard
+              bill={bill}
+              calculation={calculation}
               copied={copied}
+              shareLinkMessage={shareLinkMessage}
+              isSharedBill={isSharedBill}
               onTogglePayment={togglePaymentStatus}
               onCopy={copySummary}
+              onCreateShareLink={createShareLink}
               onReset={resetBill}
-            />
-
-            <SettlementSection
-              payerName={payer?.name}
-              lines={calculation.settlementLines}
             />
 
             <HistorySection
