@@ -24,6 +24,7 @@ export function ReceiptSummaryCard({
   onCopy,
   onCreateShareLink,
   onReset,
+  readOnlyStatuses = false,
 }: {
   bill: BillState;
   calculation: BillCalculation;
@@ -32,8 +33,9 @@ export function ReceiptSummaryCard({
   isSharedBill: boolean;
   onTogglePayment: (personId: string) => void;
   onCopy: () => void;
-  onCreateShareLink: () => void;
-  onReset: () => void;
+  onCreateShareLink?: () => void;
+  onReset?: () => void;
+  readOnlyStatuses?: boolean;
 }) {
   const receiptRef = useRef<HTMLDivElement>(null);
   const [expandedPeople, setExpandedPeople] = useState<Record<string, boolean>>(
@@ -138,15 +140,23 @@ export function ReceiptSummaryCard({
                             <p className="font-semibold text-primary">
                               {formatPeso(person.total)}
                             </p>
-                            <button
-                              type="button"
-                              onClick={() => onTogglePayment(person.personId)}
-                              className="mt-1 text-xs uppercase text-muted-foreground hover:text-primary"
-                            >
-                              {person.paymentStatus === "paid"
-                                ? "Paid"
-                                : "Unpaid"}
-                            </button>
+                            {readOnlyStatuses ? (
+                              <p className="mt-1 text-xs uppercase text-muted-foreground">
+                                {person.paymentStatus === "paid"
+                                  ? "Paid"
+                                  : "Unpaid"}
+                              </p>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => onTogglePayment(person.personId)}
+                                className="mt-1 text-xs uppercase text-muted-foreground hover:text-primary"
+                              >
+                                {person.paymentStatus === "paid"
+                                  ? "Paid"
+                                  : "Unpaid"}
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -247,16 +257,24 @@ export function ReceiptSummaryCard({
           >
             Export Summary
           </Button>
-          <Button onClick={onCreateShareLink} variant="outline" className="h-11">
-            Create Share Link
-          </Button>
-          <Button
-            onClick={onReset}
-            variant="outline"
-            className="h-11 border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive"
-          >
-            Reset Bill
-          </Button>
+          {onCreateShareLink ? (
+            <Button
+              onClick={onCreateShareLink}
+              variant="outline"
+              className="h-11"
+            >
+              Create Share Link
+            </Button>
+          ) : null}
+          {onReset ? (
+            <Button
+              onClick={onReset}
+              variant="outline"
+              className="h-11 border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive"
+            >
+              Reset Bill
+            </Button>
+          ) : null}
         </div>
 
         {exportMessage || shareLinkMessage ? (

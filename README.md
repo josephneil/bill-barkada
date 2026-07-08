@@ -18,6 +18,7 @@ summary.
 - Review a receipt-style summary with per-person breakdowns.
 - Export the receipt summary as a PNG image.
 - Create compressed share links for frontend-only bill sharing.
+- Save bills online with PostgreSQL-backed public view and secret edit links.
 - Check non-blocking validation warnings before sharing.
 - Save the current bill locally in the browser.
 - Save, load, delete, and clear local bill history.
@@ -30,6 +31,8 @@ summary.
 - TypeScript
 - Tailwind CSS
 - shadcn/ui
+- Prisma
+- PostgreSQL
 
 ## Getting Started
 
@@ -37,6 +40,14 @@ Install dependencies:
 
 ```bash
 npm install
+```
+
+Configure PostgreSQL:
+
+```bash
+cp .env.example .env
+npm run prisma:generate
+npm run prisma:migrate
 ```
 
 Run the development server:
@@ -52,4 +63,5 @@ Open `http://localhost:3000`.
 ```bash
 npm run lint
 npm run build
+npm run prisma:generate
 ```

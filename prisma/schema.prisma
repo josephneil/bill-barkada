@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TipMode {
+  AMOUNT
+  PERCENT
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+}
+
+model Bill {
+  id                   String     @id @default(cuid())
+  title                String
+  date                 DateTime?
+  paidByPersonId       String?
+  paidBy               Person?    @relation("PaidBy", fields: [paidByPersonId], references: [id], onDelete: SetNull)
+  serviceChargePercent Float      @default(0)
+  tipMode              TipMode    @default(AMOUNT)
+  tipAmount            Float      @default(0)
+  tipPercent           Float      @default(0)
+  discountAmount       Float      @default(0)
+  publicShareId        String     @unique
+  editTokenHash        String
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  people               Person[]
+  items                BillItem[]
+}
+
+model Person {
+  id            String        @id @default(cuid())
+  clientId      String
+  billId        String
+  bill          Bill          @relation(fields: [billId], references: [id], onDelete: Cascade)
+  name          String
+  paymentStatus PaymentStatus @default(UNPAID)
+  itemShares    BillItemShare[]
+  paidBills     Bill[]        @relation("PaidBy")
+
+  @@index([billId])
+  @@unique([billId, clientId])
+}
+
+model BillItem {
+  id       String          @id @default(cuid())
+  clientId String
+  billId   String
+  bill     Bill            @relation(fields: [billId], references: [id], onDelete: Cascade)
+  name     String
+  price    Float
+  shares   BillItemShare[]
+
+  @@index([billId])
+  @@unique([billId, clientId])
+}
+
+model BillItemShare {
+  id       String   @id @default(cuid())
+  itemId   String
+  personId String
+  item     BillItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  person   Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, personId])
+  @@index([personId])
+}
